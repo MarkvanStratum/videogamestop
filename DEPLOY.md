@@ -15,3 +15,5 @@ This version adds PostgreSQL-backed registration/login, secure HttpOnly session 
 - No password reset, email verification, payment gateway, or checkout is included. Do not market paid access until those are implemented and licensing permission is obtained.
 - To grant access later, integrate a **verified payment webhook** that sets `tvg_users.lifetime_access=true` for the correct customer. Never accept a browser-only success signal as proof of payment.
 - For production security, configure monitored backups, rate limits at the edge, and a password reset flow before promoting accounts widely.
+
+Pricing navigation fix: #pricing, #games and #categories now scroll after restoring the home view. Cache-busted scripts included.

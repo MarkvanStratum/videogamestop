@@ -34,7 +34,17 @@ function randomGame() { if(!allGames.length)return;const g=allGames[Math.floor(M
 function showHome() {$('homeView').hidden=false;$('playView').hidden=true;$('gameFrame').removeAttribute('src');document.title='Top Video Games — Your next obsession starts here';}
 async function route() {
   const hash=decodeURIComponent(location.hash.slice(1));
-  if(!hash.startsWith('play/')) {showHome();return;}
+  if(!hash.startsWith('play/')) {
+    showHome();
+    if (['pricing','games','categories'].includes(hash)) {
+      // The homepage may have been hidden while a game was displayed.
+      // Scroll only after restoring it, including on direct links and refresh.
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        document.getElementById(hash)?.scrollIntoView({behavior:'auto',block:'start'});
+      }));
+    } else if (!hash) window.scrollTo({top:0,behavior:'auto'});
+    return;
+  }
   const slug=hash.slice(5);
   if(!/^[a-z0-9-]{1,120}$/.test(slug)){showHome();return;}
   $('homeView').hidden=true;$('playView').hidden=false;$('gameLoading').hidden=false;
@@ -63,3 +73,6 @@ $('menuBtn').addEventListener('click',()=>$('menuBtn').parentElement.querySelect
 document.addEventListener('keydown',e=>{if(e.key==='/'&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){e.preventDefault();showHome();$('searchInput').focus()}});
 window.addEventListener('hashchange',route);text($('year'),new Date().getFullYear());
 (async()=>{try{const response=await fetch('/api/games');if(!response.ok)throw new Error();const data=await response.json();allGames=Array.isArray(data.games)?data.games:[];text($('gameCount'),`${(data.total||allGames.length).toLocaleString()}+`);render();}catch{allGames=[];text($('status'),'Could not load games right now. Please refresh the page in a moment.');text($('resultCount'),'Unavailable');}route()})();
+
+// Handle repeat clicks on the same anchor, which do not fire hashchange.
+document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',()=>{if(location.hash===a.getAttribute('href'))route();}));

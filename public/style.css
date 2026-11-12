@@ -4,3 +4,5 @@
 
 /* Lifetime access tiers */
 .pricing-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:26px}.pricing-card{background:#17162e;border:1px solid #373455;border-radius:22px;padding:28px;display:flex;flex-direction:column;gap:16px;color:white}.pricing-card.featured{border:2px solid #a36aff;box-shadow:0 0 35px #9b5cf326}.pricing-card h3{font-size:1.6rem;margin:0}.pricing-card p,.pricing-note{color:#b8b5d4}.pricing-card .primary-btn{margin-top:14px;opacity:.6;cursor:not-allowed}.plan-price{font-size:2.5rem;font-weight:900;color:#fff}.plan-kicker{color:#b79bff;letter-spacing:.15em;font-size:.8rem;font-weight:800}.tier-tag{font-size:.64rem;font-weight:900;color:#a990ff}.pricing-note{margin-top:22px;font-size:.85rem}@media(max-width:750px){.pricing-grid{grid-template-columns:1fr}}
+
+.company-disclosure{display:flex;flex-direction:column;gap:8px;margin:18px 0 25px;color:#c6c3d9;font-size:12px;line-height:1.7}.company-disclosure strong{color:#fff;letter-spacing:.4px}.company-disclosure div{display:flex;gap:20px;flex-wrap:wrap}.company-disclosure a{color:#8de8fa;text-decoration:underline;text-underline-offset:3px}

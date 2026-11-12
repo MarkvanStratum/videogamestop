@@ -1,0 +1,17 @@
+let accessState={user:null,free_game:null};
+const modal=document.getElementById('accessModal'),message=document.getElementById('accessMessage');
+async function accessRequest(url,options={}){const r=await fetch(url,{credentials:'same-origin',...options});const data=await r.json();if(!r.ok)throw Object.assign(new Error(data.error||'Request failed'),{status:r.status,data});return data;}
+async function refreshAccess(){try{accessState=await accessRequest('/api/auth/me');}catch(e){console.warn(e.message)}updateAccess();}
+function updateAccess(){document.getElementById('accountBtn').textContent=accessState.user?`👤 ${accessState.user.email+' ('+(accessState.user.access_tier||'free')+')'}`:'👤 Log in / Register';document.getElementById('logoutBtn').hidden=!accessState.user;}
+function openAccess(mode='register',notice='',required=''){document.getElementById('requiredTierText').textContent=required?'This game requires '+required.toUpperCase()+' access or higher.':'';modal.hidden=false;message.textContent=notice;document.getElementById('authForm').hidden=mode==='upgrade';document.getElementById('upgradePanel').hidden=mode!=='upgrade';document.getElementById('authHeading').textContent=mode==='login'?'WELCOME BACK':mode==='upgrade'?'UNLOCK THE ARCADE':'JOIN THE ARCADE';document.getElementById('authSubmit').textContent=mode==='login'?'LOG IN':'CREATE ACCOUNT';document.getElementById('authToggle').textContent=mode==='login'?'Need an account? Register':'Already have an account? Log in';modal.dataset.mode=mode;}
+function closeAccess(){modal.hidden=true;}
+document.getElementById('accountBtn').addEventListener('click',()=>openAccess(accessState.user?'upgrade':'register'));
+document.getElementById('closeAccess').addEventListener('click',closeAccess);
+document.getElementById('authToggle').addEventListener('click',()=>openAccess(modal.dataset.mode==='login'?'register':'login'));
+document.getElementById('logoutBtn').addEventListener('click',async()=>{await accessRequest('/api/auth/logout',{method:'POST'});await refreshAccess();});
+document.getElementById('authForm').addEventListener('submit',async e=>{e.preventDefault();const mode=modal.dataset.mode;try{const data=await accessRequest(`/api/auth/${mode}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('authEmail').value,password:document.getElementById('authPassword').value})});accessState.user=data;updateAccess();closeAccess();document.getElementById('authForm').reset();}catch(e){message.textContent=e.message;}});
+document.getElementById('upgradeLogin').addEventListener('click',()=>openAccess('login'));
+document.getElementById('viewPlans').addEventListener('click',closeAccess);
+document.getElementById('upgradeRegister').addEventListener('click',()=>openAccess('register'));
+window.checkGameAccess=async slug=>{try{await accessRequest('/api/play/'+encodeURIComponent(slug),{method:'POST'});await refreshAccess();return true;}catch(e){if(e.status===402)openAccess('upgrade','Your free game is still available to replay. Additional games require the appropriate lifetime access tier.',e.data?.required_tier);else openAccess('upgrade','We could not check access right now. Please try again.');return false;}};
+refreshAccess();

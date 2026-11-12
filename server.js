@@ -1,6 +1,9 @@
 const express = require('express');
 const path = require('path');
 const app = express();
+const auth = require('./auth');
+app.set('trust proxy', 1);
+auth.attach(app);
 const PORT = process.env.PORT || 3000;
 const BASE = 'https://www.gamearter.com/api/v1/catalog';
 const TTL = 10 * 60 * 1000;
@@ -28,6 +31,17 @@ async function getCatalog() {
   cache = { at: Date.now(), games, total };
   return cache;
 }
+// Deterministic tier assignment: first 500 sorted slugs Starter, next 500 Premium, remainder Ultimate.
+// Existing slugs retain their tier as long as catalog membership remains stable.
+async function tierForGame(slug) {
+  const {games} = await getCatalog();
+  const ordered = [...new Set(games.map(g=>g.slug))].sort();
+  const index = ordered.indexOf(slug);
+  if(index < 0) throw new Error('Game not found in catalog');
+  return index < 500 ? 'starter' : index < 1000 ? 'premium' : 'ultimate';
+}
+auth.configureTiers(tierForGame);
+app.get('/api/plans', (_req,res)=>res.json({currency:'GBP',checkout_enabled:false,plans:[{id:'starter',name:'Starter',price_pence:1995,games:500},{id:'premium',name:'Premium',price_pence:3595,games:1000},{id:'ultimate',name:'Ultimate',price_pence:4995,games:'all'}]}));
 app.disable('x-powered-by');
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.get('/api/games', async (req, res) => {
@@ -38,14 +52,14 @@ app.get('/api/games/:slug', async (req, res) => {
   const slug = req.params.slug;
   if (!/^[a-z0-9-]{1,120}$/.test(slug)) return res.status(400).json({ error: 'Invalid game identifier' });
   const existing = detailCache.get(slug);
-  if (existing && Date.now() - existing.at < TTL) return res.json(existing.data);
+  if (existing && Date.now() - existing.at < TTL) return res.json({...existing.data,required_tier:await tierForGame(slug)});
   try {
     const data = await getJson(`${BASE}/games/${encodeURIComponent(slug)}`);
     detailCache.set(slug, { at: Date.now(), data });
     if (detailCache.size > 1000) detailCache.delete(detailCache.keys().next().value);
-    res.json(data);
+    res.json({...data,required_tier:await tierForGame(slug)});
   } catch (err) { res.status(err.status === 404 ? 404 : 502).json({ error: err.status === 404 ? 'Game no longer available' : 'Could not load game details' }); }
 });
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.listen(PORT, '0.0.0.0', () => console.log(`Top Video Games listening on ${PORT}`));
+auth.init().then(() => app.listen(PORT, '0.0.0.0', () => console.log(`Top Video Games listening on ${PORT}`))).catch(err => { console.error('Database initialization failed:', err.message); process.exit(1); });

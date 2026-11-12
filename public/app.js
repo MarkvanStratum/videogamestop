@@ -4,6 +4,7 @@ const fallbackGenres = {action:'⚡',puzzle:'🧩',racing:'🏎️',arcade:'👾
 function text(el, value) { el.textContent = value ?? ''; }
 function imageFor(g) { return g.thumbnail || g.images?.thumbnail || ''; }
 function genreFor(g) { return (g.genres || g.categories || [])[0] || 'game'; }
+function tierForSlug(slug){const i=[...new Set(allGames.map(g=>g.slug))].sort().indexOf(slug);return i<0?'ultimate':i<500?'starter':i<1000?'premium':'ultimate';}
 function render() {
   filtered = allGames.filter(g => (genre === 'all' || (g.genres || g.categories || []).includes(genre)) && (!query || `${g.name} ${g.slug} ${(g.tags || []).join(' ')}`.toLowerCase().includes(query)));
   text($('resultCount'), `${filtered.length.toLocaleString()} games found`);
@@ -15,7 +16,7 @@ function render() {
     const name=document.createElement('strong');text(name,g.name);
     const meta=document.createElement('div');meta.className='game-card-meta';
     const category=document.createElement('span');text(category,genreFor(g));
-    const play=document.createElement('span');text(play,'PLAY ↗');meta.append(category,play);body.append(name,meta);card.append(img,body);
+    const play=document.createElement('span');text(play,'PLAY ↗');const tier=document.createElement('span');tier.className='tier-tag';tier.textContent=({starter:'STARTER',premium:'PREMIUM',ultimate:'ULTIMATE'})[tierForSlug(g.slug)]||'GAME';meta.append(category,tier,play);body.append(name,meta);card.append(img,body);
     card.addEventListener('click',()=>location.hash=`play/${encodeURIComponent(g.slug)}`);
     return card;
   }));
@@ -46,6 +47,7 @@ async function route() {
     text($('playTitle'),g.name);text($('playDescription'),g.description || 'Get ready to play!');text($('playControls'),g.controls || 'Check the game screen for controls.');
     text($('playGenre'),(g.genres||g.categories||[]).join(', ') || 'Game');
     text($('playPlatform'),[g.platforms?.desktop?'Desktop':null,g.platforms?.mobile?'Mobile':null].filter(Boolean).join(' / ') || 'Browser');
+    if(!(await window.checkGameAccess(slug))){$('gameLoading').hidden=true;return;}
     $('gameFrame').title=g.name;$('gameFrame').src=g.url;document.title=`${g.name} — Top Video Games`;
   } catch(err) {text($('playTitle'),'Game unavailable');text($('playDescription'),err.message);$('gameLoading').hidden=true;}
 }

@@ -44,7 +44,7 @@ async function tierForGame(slug) {
   return index < 500 ? 'starter' : index < 1000 ? 'premium' : 'ultimate';
 }
 auth.configureTiers(tierForGame);
-app.get('/api/plans', (_req,res)=>res.json({currency:'GBP',checkout_enabled:false,plans:[{id:'starter',name:'Starter',price_pence:2295,games:500},{id:'premium',name:'Premium',price_pence:2695,games:1000},{id:'ultimate',name:'Ultimate',price_pence:3795,games:'all'}]}));
+app.get('/api/plans', (_req,res)=>res.json({currency:'GBP',checkout_enabled:true,plans:[{id:'starter',name:'Starter',price_pence:2295,games:500},{id:'premium',name:'Premium',price_pence:2695,games:1000},{id:'ultimate',name:'Ultimate',price_pence:3795,games:'all'}]}));
 app.disable('x-powered-by');
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.get('/api/games', async (req, res) => {
@@ -65,4 +65,4 @@ app.get('/api/games/:slug', async (req, res) => {
 });
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-auth.init().then(() => app.listen(PORT, '0.0.0.0', () => console.log(`Top Video Games listening on ${PORT}`))).catch(err => { console.error('Database initialization failed:', err.message); process.exit(1); });
+Promise.all([auth.init(),payments.init()]).then(() => app.listen(PORT, '0.0.0.0', () => console.log(`Top Video Games listening on ${PORT}`))).catch(err => { console.error('Database initialization failed:', err.message); process.exit(1); });

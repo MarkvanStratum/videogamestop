@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Pagamento sicuro — Pagamento</title>
+
+<meta http-equiv="Content-Security-Policy" content="
+default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval';
+script-src 'self' https: 'unsafe-inline' 'unsafe-eval';
+connect-src 'self' https:;
+frame-src *;
+style-src 'self' https: 'unsafe-inline';
+img-src * data: blob:;
+">
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-FDQ6REQWS8"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-FDQ6REQWS8', { send_page_view: true });
+</script>
+<script src="https://api.goaffpro.com/loader.js?shop=nzyvwvfbde" type="text/javascript" async></script>
+
+<script src="https://js.stripe.com/v3/"></script>
+
+<style>
+:root{--bg:#f4f6f9;--primary:#1e3a8a;--text:#1f2937;--muted:#6b7280;--border:#d1d5db;--accent:#2563eb;}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+margin:0;background:var(--bg);color:var(--text);
+font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+}
+
+.top-bar {
+    background: #111827;
+    color: #fff;
+    font-size: 13px;
+    padding: 8px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.wrap{max-width:960px;margin:0 auto;padding:30px 16px 60px}
+
+.header-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 5px solid var(--accent);
+    gap: 20px;
+}
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.product-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    display: block;
+}
+.header-title { font-size: 22px; font-weight: 800; color: #111; margin: 0; }
+.header-price-tag { font-size: 20px; font-weight: 900; color: var(--accent); background: #eff6ff; padding: 6px 14px; border-radius: 8px; white-space: nowrap; }
+
+.checkout-grid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+@media(max-width: 850px) {
+    .checkout-grid { grid-template-columns: 1fr; }
+}
+
+/* Form Section (Left) */
+.form-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+}
+
+.field-group { margin-bottom: 18px; }
+.label-text { font-size: 13px; font-weight: 700; display: block; margin-bottom: 6px; color: #374151; }
+.input { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-size: 15px; background: #fff; outline: none; transition: border-color 0.2s; }
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+.gateway-field {
+    width: 100%;
+    height: 48px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: #fff;
+}
+
+/* Action Button */
+.btn-submit {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 16px;
+    font-weight: 800;
+    font-size: 16px;
+    width: 100%;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.2s;
+    margin-top: 10px;
+    box-shadow: 0 4px 12px rgba(37,99,235,0.2);
+}
+.btn-submit:hover { background: #1d4ed8; }
+.btn-submit:disabled { opacity: 0.65; cursor: not-allowed; }
+
+/* Summary Column (Right) */
+.summary-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    border: 1px solid #e5e7eb;
+}
+
+.summary-title { font-size: 16px; font-weight: 800; border-bottom: 1px solid #f3f4f6; padding-bottom: 12px; margin-bottom: 16px; color: #111; }
+.summary-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 12px; color: #4b5563; }
+.summary-row.total { font-weight: 800; font-size: 18px; color: #111; border-top: 1px solid #f3f4f6; padding-top: 12px; margin-top: 12px; }
+
+/* Summary Product Display */
+.summary-product {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f3f4f6;
+}
+.summary-product-img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    display: none;
+}
+.summary-product-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111;
+    word-break: break-word;
+}
+
+/* Miniature Card Visual */
+.mini-card {
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    border-radius: 12px;
+    padding: 18px;
+    color: #fff;
+    margin-bottom: 20px;
+    box-shadow: 0 6px 15px rgba(30,58,138,0.2);
+}
+.mini-card-top { display: flex; justify-content: space-between; font-size: 11px; opacity: 0.8; text-transform: uppercase; }
+.mini-card-num { font-family: monospace; font-size: 18px; letter-spacing: 2px; margin: 15px 0; }
+.mini-card-btm { display: flex; justify-content: space-between; font-size: 11px; }
+
+.err{display:none;background:#fff1f1;border:1px solid #f5bcbc;padding:12px;border-radius:8px;margin-bottom:16px;color:#9a1a1a;font-size:13px;}
+.err[aria-hidden="false"]{display:block}
+
+.loading-overlay{position:fixed;inset:0;background:rgba(246,249,252,.92);display:none;align-items:center;justify-content:center;z-index:9999}
+.loading-overlay[aria-hidden="false"]{display:flex}
+.loading-box{width:min(92vw,460px);background:#fff;border:1px solid #e6edf5;border-radius:14px;padding:24px;text-align:center}
+.loading-title{font-size:20px;font-weight:800;margin-bottom:18px}
+.progress-wrap{width:100%;height:12px;background:#ecf1f8;border-radius:999px;overflow:hidden}
+.progress-bar{width:0%;height:100%;background:linear-gradient(90deg,#7aa3ff,#2dd4bf);animation:loadingBar 2.2s ease-in-out infinite}
+@keyframes loadingBar{0%{width:0%}60%{width:80%}100%{width:100%}}
+</style>
+</head>
+
+<body>
+
+<script>
+sessionStorage.setItem("orig_qs", location.search.replace(/^\?/, ""));
+</script>
+
+<div class="top-bar">
+    <span>🔒 Pagamento sicuro tramite Stripe</span>
+    <span>Assistenza clienti disponibile</span>
+</div>
+
+<div class="wrap">
+
+    <div class="header-card">
+        <div class="header-left">
+            <img id="productImageTop" class="product-image" alt="Immagine prodotto" />
+            <div>
+                <h1 id="productTitleTop" class="header-title">Completa il tuo ordine</h1>
+                <p style="margin:4px 0 0; color:var(--muted); font-size:14px;">Inserisci i tuoi dati qui sotto per finalizzare l'acquisto.</p>
+            </div>
+        </div>
+        <div class="header-price-tag" data-plan-price>€2,35</div>
+    </div>
+
+    <div class="checkout-grid">
+
+        <!-- Left Form Column -->
+        <div class="form-card">
+            
+            <div id="err" class="err" aria-hidden="true"></div>
+
+            <form id="cart-form" onsubmit="return false;">
+                
+                <div class="field-group">
+                    <label class="label-text">Nome del titolare della carta</label>
+                    <input id="cardholderName" class="input" placeholder="{firstname} {lastname}" required>
+                </div>
+
+                <div class="field-group">
+                    <label class="label-text">Numero di carta e dati</label>
+                    <div id="stripe-card-element" class="gateway-field"></div>
+                </div>
+                <div class="field-group">
+                    <label class="label-text">Indirizzo email</label>
+                    <input id="emailInput" class="input" type="email" placeholder="{email}" required>
+                </div>
+
+                <div class="field-group">
+                    <label class="label-text">Numero di telefono</label>
+                    <input id="phoneNumber" class="input" placeholder="{phone}" required>
+                </div>
+
+                <!-- Hidden Compatibility Fields -->
+                <input id="firstName" type="hidden">
+                <input id="lastName" type="hidden">
+
+                <button type="button" id="payBtn" class="btn-submit" disabled>Paga €2,35 ora</button>
+            </form>
+        </div>
+
+        <!-- Right Summary Column -->
+        <div>
+            <div class="summary-card">
+                
+                <!-- Mini Card Graphic preview -->
+                <div class="mini-card">
+                    <div class="mini-card-top">
+                        <span>Carta sicura</span>
+                        <span>💳</span>
+                    </div>
+                    <div class="mini-card-num">•••• •••• •••• ••••</div>
+                    <div class="mini-card-btm">
+                        <div>
+                            <div style="font-size:9px; opacity:0.7;">TITOLARE</div>
+                            <div id="previewName" style="font-weight:700;">John Johnson</div>
+                        </div>
+                        <div>
+                            <div style="font-size:9px; opacity:0.7;">SCADENZA</div>
+                            <div id="previewExpiry" style="font-weight:700;">MM/AA</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="summary-title">Riepilogo ordine</div>
+                
+                <!-- Summary Product Item Details -->
+                <div id="summaryProductContainer" class="summary-product" style="display: none;">
+                    <img id="productImageSide" class="summary-product-img" alt="Prodotto" />
+                    <div id="productTitleSide" class="summary-product-title"></div>
+                </div>
+
+                <div class="summary-row">
+                    <span>Totale</span>
+                    <span data-plan-price>€2,35</span>
+                </div>
+                <div class="summary-row">
+                    <span>IVA / Tasse</span>
+                    <span>Inclusa</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Totale dovuto</span>
+                    <span data-plan-price>€2,35</span>
+                </div>
+
+                <div style="margin-top:20px; font-size:11px; color:var(--muted); text-align:center; line-height:1.4;">
+                    I dati della carta vengono elaborati in modo sicuro tramite campi gestiti da Stripe.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<div id="loading-overlay" class="loading-overlay" aria-hidden="true">
+<div class="loading-box">
+<div class="loading-title">Elaborazione del pagamento…</div>
+<div class="progress-wrap"><div class="progress-bar"></div></div>
+<p class="sub" style="margin-top:10px">Si prega di mantenere questa finestra aperta…</p>
+</div>
+</div>
+
+<script>
+const tokenFromServer = window.PROMO_CHECKOUT_TOKEN || null;
+const qs = new URLSearchParams(location.search);
+const err = document.getElementById('err');
+const payBtn = document.getElementById('payBtn');
+const overlay = document.getElementById('loading-overlay');
+const prices = {starter:'£22.95 GBP',premium:'£26.95 GBP',ultimate:'€2,35'};
+function showError(message){err.textContent=message;err.setAttribute('aria-hidden','false');}
+function clearError(){err.textContent='';err.setAttribute('aria-hidden','true');}
+function loading(value){payBtn.disabled=value;overlay.setAttribute('aria-hidden',value?'false':'true');}
+async function jsonFetch(url, options){
+ const response=await fetch(url,{credentials:'same-origin',cache:'no-store',...options});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(data.error||`Request failed (${response.status})`);
+ return data;
+}
+function applyParams(){
+ const title=qs.get('sub1');
+ if(title){
+  document.getElementById('productTitleTop').textContent=title;
+  document.getElementById('productTitleSide').textContent=title;
+  document.getElementById('summaryProductContainer').style.display='flex';
+ }
+ const image=qs.get('sub2');
+ if(image){
+  try{
+   const u=new URL(image,location.origin);
+   if(u.protocol==='https:'){
+    document.getElementById('productImageTop').src=u.href;
+    document.getElementById('productImageSide').src=u.href;
+    document.getElementById('productImageSide').style.display='block';
+    document.getElementById('summaryProductContainer').style.display='flex';
+   }
+  }catch(e){}
+ }
+ const name=[qs.get('sub3'),qs.get('sub4')].filter(Boolean).join(' ');
+ if(name)document.getElementById('cardholderName').value=name;
+ if(qs.get('sub9'))document.getElementById('emailInput').value=qs.get('sub9');
+ if(qs.get('sub10'))document.getElementById('phoneNumber').value=qs.get('sub10');
+ const nameInput=document.getElementById('cardholderName');
+ const preview=document.getElementById('previewName');
+ preview.textContent=name||'John Johnson';
+ nameInput.addEventListener('input',()=>preview.textContent=nameInput.value||'John Johnson');
+}
+async function waitForPaid(reference){
+ for(let i=0;i<12;i++){
+  const data=await jsonFetch('/api/stripe/payment-status?reference='+encodeURIComponent(reference));
+  if(data.status==='paid')return true;
+  if(['failed','canceled'].includes(data.status))throw new Error('Pagamento non completato.');
+  await new Promise(resolve=>setTimeout(resolve,1500));
+ }
+ return false;
+}
+window.addEventListener('DOMContentLoaded',async()=>{
+ applyParams();
+ if(!tokenFromServer){
+  try{
+   const data=await jsonFetch('/api/create-promo-checkout-link',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+     plan:'3795',step2File:'xo-dif-it1.html',sourcePage:location.pathname,
+     ref:qs.get('ref')||'',originalQueryString:location.search.slice(1)
+    })
+   });
+   const redirect=new URL(data.url,location.origin);
+   qs.forEach((value,key)=>redirect.searchParams.set(key,value));
+   location.replace(redirect.href);
+  }catch(e){showError(e.message);}
+  return;
+ }
+ try{
+  const [link,config]=await Promise.all([
+   jsonFetch('/api/checkout-link/'+encodeURIComponent(tokenFromServer)),
+   jsonFetch('/api/stripe/config')
+  ]);
+  const plan=link.plan;
+  if(!prices[plan])throw new Error('Piano di pagamento non valido.');
+  document.querySelectorAll('[data-plan-price]').forEach(el=>el.textContent=prices[plan]);
+  payBtn.textContent='Paga '+prices[plan]+' ora';
+  if(typeof Stripe!=='function')throw new Error('Impossibile caricare Stripe.');
+  const stripe=Stripe(config.publishableKey);
+  const elements=stripe.elements();
+  const card=elements.create('card',{hidePostalCode:true,style:{base:{fontSize:'16px',color:'#1f2937'}}});
+  card.mount('#stripe-card-element');
+  card.on('change',event=>{if(event.error)showError(event.error.message);else clearError();});
+  payBtn.disabled=false;
+  payBtn.onclick=async()=>{
+   clearError();
+   const name=document.getElementById('cardholderName').value.trim();
+   const email=document.getElementById('emailInput').value.trim();
+   if(!name||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    showError('Inserisci un nome e un indirizzo email validi.');return;
+   }
+   loading(true);
+   try{
+    const payment=await jsonFetch('/api/stripe/create-payment-intent',{
+     method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({plan})
+    });
+    const result=await stripe.confirmCardPayment(payment.clientSecret,{
+     payment_method:{card,billing_details:{name,email}}
+    });
+    if(result.error)throw new Error(result.error.message);
+    if(result.paymentIntent?.status!=='succeeded'){
+     throw new Error('Pagamento non completato.');
+    }
+    if(await waitForPaid(payment.reference)){
+     location.assign('/');
+    }else{
+     showError('Pagamento ricevuto. Attivazione in corso; controlla il tuo account.');
+    }
+   }catch(e){
+    if(/register or log in|log in|iniciar sesi[oó]n/i.test(e.message)){
+     showError('Accedi o registrati prima di pagare.');
+    }else{showError(e.message);}
+   }finally{loading(false);}
+  };
+ }catch(e){showError(e.message);}
+});
+</script>
+
+</body>
+</html>

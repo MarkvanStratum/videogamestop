@@ -2,8 +2,11 @@ const express = require('express');
 const path = require('path');
 const app = express();
 const auth = require('./auth');
+const payments = require('./stripe-payments');
 app.set('trust proxy', 1);
+payments.attachWebhook(app); // Raw body must precede JSON middleware
 auth.attach(app);
+payments.attachApi(app,auth);
 const PORT = process.env.PORT || 3000;
 const BASE = 'https://www.gamearter.com/api/v1/catalog';
 const TTL = 10 * 60 * 1000;
@@ -41,7 +44,7 @@ async function tierForGame(slug) {
   return index < 500 ? 'starter' : index < 1000 ? 'premium' : 'ultimate';
 }
 auth.configureTiers(tierForGame);
-app.get('/api/plans', (_req,res)=>res.json({currency:'GBP',checkout_enabled:false,plans:[{id:'starter',name:'Starter',price_pence:1995,games:500},{id:'premium',name:'Premium',price_pence:3595,games:1000},{id:'ultimate',name:'Ultimate',price_pence:4995,games:'all'}]}));
+app.get('/api/plans', (_req,res)=>res.json({currency:'GBP',checkout_enabled:false,plans:[{id:'starter',name:'Starter',price_pence:2295,games:500},{id:'premium',name:'Premium',price_pence:2695,games:1000},{id:'ultimate',name:'Ultimate',price_pence:3795,games:'all'}]}));
 app.disable('x-powered-by');
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.get('/api/games', async (req, res) => {

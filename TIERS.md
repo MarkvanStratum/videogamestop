@@ -1,8 +1,8 @@
 # Lifetime tiers (checkout disabled)
 
-- Starter: £19.95, 500 games
-- Premium: £35.95, 1,000 games (includes Starter)
-- Ultimate: £49.95, all games
+- Starter: £22.95, 500 games
+- Premium: £26.95, 1,000 games (includes Starter)
+- Ultimate: £37.95, all games
 
 Game assignment is deterministic by alphabetical game slug, using the current catalog. As games are added/removed, some assignments may shift. For production, persist immutable assignments in PostgreSQL.
 

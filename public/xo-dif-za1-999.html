@@ -371,7 +371,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
    const data=await jsonFetch('/api/create-promo-checkout-link',{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
-     plan:'3795',step2File:'xo-dif-za1.html',sourcePage:location.pathname,
+     plan:'3795',step2File:'xo-dif-za1-999.html',sourcePage:location.pathname,
      ref:qs.get('ref')||'',originalQueryString:location.search.slice(1)
     })
    });

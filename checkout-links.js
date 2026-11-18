@@ -23,6 +23,23 @@ const aliases = {
 };
 
 const normalize = p => aliases[p] || p;
+const cookieName = 'tvg_external_checkout';
+const cookieHash = value => crypto.createHash('sha256').update(value).digest('hex');
+function cookieValue(req) {
+  const match = (req.headers.cookie || '').match(/(?:^|;\s*)tvg_external_checkout=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : '';
+}
+async function guestCheckout(req) {
+  const value = cookieValue(req);
+  if (!/^[a-f0-9]{64}$/.test(value)) return null;
+  const result = await pool.query(`
+    SELECT token, plan FROM tvg_checkout_links
+    WHERE session_hash=$1 AND expires_at>NOW()
+    AND step2_file <> 'checkout.html'
+  `, [cookieHash(value)]);
+  return result.rows[0] || null;
+}
+
 
 function getTemplate(filename) {
   if (
@@ -61,6 +78,7 @@ async function init() {
     ADD COLUMN IF NOT EXISTS step2_file TEXT
     NOT NULL DEFAULT 'checkout.html'
   `);
+  await pool.query(`ALTER TABLE tvg_checkout_links ADD COLUMN IF NOT EXISTS session_hash TEXT`);
 }
 
 function attach(app) {
@@ -177,6 +195,18 @@ function attach(app) {
         templatePath, 'utf8'
       );
 
+      // Bind the external checkout to this browser without modifying its HTML.
+      // Main-site checkout.html never receives a guest checkout session.
+      if (filename !== 'checkout.html') {
+        const sessionSecret = crypto.randomBytes(32).toString('hex');
+        await pool.query('UPDATE tvg_checkout_links SET session_hash=$2 WHERE token=$1 AND expires_at>NOW()',
+          [token, cookieHash(sessionSecret)]);
+        res.cookie(cookieName, sessionSecret, {
+          httpOnly: true, secure: req.secure || process.env.NODE_ENV === 'production',
+          sameSite: 'lax', path: '/', maxAge: 30 * 60 * 1000
+        });
+      }
+
       const bootstrap = `
 <script>
 window.PROMO_CHECKOUT_TOKEN = ${JSON.stringify(token)};
@@ -241,4 +271,4 @@ window.PROMO_CHECKOUT_TOKEN = ${JSON.stringify(token)};
   });
 }
 
-module.exports = { init, attach };
+module.exports = { init, attach, guestCheckout };

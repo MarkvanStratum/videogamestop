@@ -2,6 +2,7 @@
 const Stripe = require('stripe');
 const crypto = require('crypto');
 const { Pool } = require('pg');
+const checkoutLinks = require('./checkout-links');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -109,9 +110,10 @@ async function completePayment(intent) {
       UPDATE tvg_stripe_payments
       SET status='paid',
           payment_intent_id=$2,
-          paid_at=COALESCE(paid_at,NOW())
+          paid_at=COALESCE(paid_at,NOW()),
+          customer_email=COALESCE(customer_email,$3)
       WHERE reference=$1
-    `, [reference, intent.id]);
+    `, [reference, intent.id, intent.charges?.data?.[0]?.billing_details?.email || intent.payment_method?.billing_details?.email || intent.receipt_email || null]);
 
     // Registered users receive game access.
     // Guest payments are recorded without creating accounts.
@@ -223,55 +225,26 @@ function attachApi(app,auth) {
             error:'Invalid package'
           });
 
-        const checkoutToken = String(
-          req.body?.checkoutToken || ''
-        );
+        // External pages submit only {plan}. Identify their checkout
+        // using the HttpOnly cookie issued when /c/:token was opened.
+        const external = await checkoutLinks.guestCheckout(req);
+        const u = external ? null : await auth.user(req);
+        let email = null;
+        const guest = !!external;
+        const checkoutToken = external?.token || null;
 
-        const u = await auth.user(req);
-        let email;
-        let guest = false;
-
-        if (checkoutToken) {
-          // Guest checkout is allowed only with a valid
-          // server-created external checkout link.
-          if (!/^[A-Za-z0-9_-]{24}$/.test(checkoutToken))
-            return res.status(400).json({
-              error:'Invalid checkout link'
-            });
-
-          const link = await pool.query(`
-            SELECT plan
-            FROM tvg_checkout_links
-            WHERE token=$1 AND expires_at>NOW()
-          `,[checkoutToken]);
-
-          if (!link.rowCount || link.rows[0].plan !== plan)
-            return res.status(403).json({
-              error:'Checkout link expired or invalid'
-            });
-
-          guest = true;
-          email = String(
-            req.body?.email || ''
-          ).trim().toLowerCase();
-
-          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-              || email.length > 254)
-            return res.status(400).json({
-              error:'Enter a valid email address'
-            });
+        if (guest) {
+          if (external.plan !== plan)
+            return res.status(403).json({error:'Checkout plan mismatch'});
+          // The unchanged HTML supplies billing email during confirmCardPayment.
         } else {
-          if (!u)
-            return res.status(401).json({
-              error:'Please register or log in before purchasing.'
-            });
-
-          if (u.lifetime_access ||
-              rank(u.access_tier)>=rank(plan))
+          if (!u) return res.status(401).json({
+            error:'Please register or log in before purchasing.'
+          });
+          if (u.lifetime_access || rank(u.access_tier) >= rank(plan))
             return res.status(409).json({
               error:'Your account already has this access level or higher.'
             });
-
           email = u.email;
         }
 
@@ -296,7 +269,7 @@ function attachApi(app,auth) {
           amount:p.amount,
           currency:'gbp',
           payment_method_types:['card'],
-          receipt_email:email,
+          ...(email ? {receipt_email:email} : {}),
           description:`Top Video Games - ${p.name} lifetime access`,
           metadata:{
             reference,
@@ -388,8 +361,8 @@ function attachApi(app,auth) {
               error:'Please log in.'
             });
         } else {
-          const token = String(req.query.checkoutToken||'');
-          if (!token || token !== row.checkout_token)
+          const external = await checkoutLinks.guestCheckout(req);
+          if (!external || external.token !== row.checkout_token)
             return res.status(403).json({
               error:'Invalid checkout authorization'
             });

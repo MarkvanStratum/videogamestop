@@ -4,11 +4,13 @@ const app = express();
 const auth = require('./auth');
 const payments = require('./stripe-payments');
 const checkoutLinks = require('./checkout-links');
+const adminCrm = require('./admin-crm');
 app.set('trust proxy', 1);
 payments.attachWebhook(app); // Raw body must precede JSON middleware
 auth.attach(app);
 payments.attachApi(app,auth);
 checkoutLinks.attach(app);
+adminCrm.attach(app);
 const PORT = process.env.PORT || 3000;
 const BASE = 'https://www.gamearter.com/api/v1/catalog';
 const TTL = 10 * 60 * 1000;
@@ -67,4 +69,4 @@ app.get('/api/games/:slug', async (req, res) => {
 });
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-Promise.all([auth.init(),payments.init(),checkoutLinks.init()]).then(() => app.listen(PORT, '0.0.0.0', () => console.log(`Top Video Games listening on ${PORT}`))).catch(err => { console.error('Database initialization failed:', err.message); process.exit(1); });
+Promise.all([auth.init(),payments.init(),checkoutLinks.init(),adminCrm.init()]).then(() => app.listen(PORT, '0.0.0.0', () => console.log(`Top Video Games listening on ${PORT}`))).catch(err => { console.error('Database initialization failed:', err.message); process.exit(1); });

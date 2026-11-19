@@ -7,7 +7,7 @@ COPY package*.json ./
 
 RUN npm install --omit=dev --no-audit --no-fund
 
-COPY server.js auth.js stripe-payments.js checkout-links.js ./
+COPY server.js auth.js stripe-payments.js checkout-links.js admin-crm.js ./
 
 COPY public ./public
 
